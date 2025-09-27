@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片格式转换工具</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🖼️ 图片格式转换工具</h1>
+            <p>支持拖拽或选择图片文件，转换为多种格式</p>
+        </header>
+
+        <main>
+            <!-- 文件上传区域 -->
+            <div class="upload-section">
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-content">
+                        <div class="upload-icon">📁</div>
+                        <p>拖拽图片文件到此处</p>
+                        <p class="or-text">或</p>
+                        <button class="select-btn" id="selectBtn">选择文件</button>
+                        <input type="file" id="fileInput" accept="image/*" multiple style="display: none;">
+                        <p class="batch-hint">💡 支持选择多个文件进行批量转换</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 图片预览区域 -->
+            <div class="preview-section" id="previewSection" style="display: none;">
+                <h3>图片预览 <span id="fileCount"></span></h3>
+                <div class="batch-controls" id="batchControls" style="display: none;">
+                    <button class="select-all-btn" id="selectAllBtn">全选</button>
+                    <button class="clear-selection-btn" id="clearSelectionBtn">清空选择</button>
+                    <span class="selected-count" id="selectedCount">已选择 0 个文件</span>
+                </div>
+                <div class="image-preview" id="imagePreview"></div>
+                
+                <!-- 转换选项 -->
+                <div class="conversion-options">
+                    <h3>转换选项</h3>
+                    <div class="option-group">
+                        <label for="outputFormat">输出格式：</label>
+                        <select id="outputFormat">
+                            <option value="jpeg">JPEG (.jpg)</option>
+                            <option value="png">PNG (.png)</option>
+                            <option value="webp">WebP (.webp)</option>
+                            <option value="bmp">BMP (.bmp)</option>
+                            <option value="gif">GIF (.gif)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="option-group" id="qualityGroup" style="display: none;">
+                        <label for="quality">质量 (1-100)：</label>
+                        <input type="range" id="quality" min="1" max="100" value="90">
+                        <span id="qualityValue">90</span>
+                    </div>
+
+                    <div class="option-group">
+                        <label for="resize">图片尺寸：</label>
+                        <select id="resize">
+                            <option value="original">保持原始尺寸</option>
+                            <option value="scale">按比例缩放</option>
+                            <option value="custom">自定义尺寸</option>
+                        </select>
+                    </div>
+
+                    <div class="option-group" id="scaleGroup" style="display: none;">
+                        <label for="scaleValue">缩放比例 (%)：</label>
+                        <input type="number" id="scaleValue" min="1" max="500" value="100">
+                    </div>
+
+                    <div class="option-group" id="customSizeGroup" style="display: none;">
+                        <label for="customWidth">宽度：</label>
+                        <input type="number" id="customWidth" min="1">
+                        <label for="customHeight">高度：</label>
+                        <input type="number" id="customHeight" min="1">
+                    </div>
+
+                    <button class="convert-btn" id="convertBtn">开始转换</button>
+                    <button class="batch-convert-btn" id="batchConvertBtn" style="display: none;">批量转换选中文件</button>
+                </div>
+            </div>
+
+            <!-- 转换信息显示 -->
+            <div class="conversion-info" id="conversionInfo" style="display: none;">
+                <h3>转换信息</h3>
+                <div class="info-content" id="infoContent"></div>
+            </div>
+
+            <!-- 结果区域 -->
+            <div class="result-section" id="resultSection" style="display: none;">
+                <h3>转换结果 <span id="resultCount"></span></h3>
+                <div class="result-preview" id="resultPreview"></div>
+                <div class="result-actions">
+                    <button class="download-btn" id="downloadBtn">下载图片</button>
+                    <button class="download-all-btn" id="downloadAllBtn" style="display: none;">下载全部 (ZIP)</button>
+                    <button class="new-convert-btn" id="newConvertBtn">转换新图片</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- 格式信息说明 -->
+        <div class="format-info">
+            <h3>格式说明</h3>
+            <div class="conversion-note">
+                <p><strong>💡 重要说明：</strong>格式转换不会改变图片的像素尺寸，只是改变文件格式和压缩方式。如需调整图片尺寸，请使用上方的"图片尺寸"选项。</p>
+            </div>
+            <div class="format-grid">
+                <div class="format-item">
+                    <strong>JPEG</strong>
+                    <p>有损压缩，文件小，适合照片</p>
+                    <p>不支持透明背景</p>
+                    <p>尺寸：保持原始像素尺寸</p>
+                </div>
+                <div class="format-item">
+                    <strong>PNG</strong>
+                    <p>无损压缩，支持透明背景</p>
+                    <p>文件较大，适合图标和图形</p>
+                    <p>尺寸：保持原始像素尺寸</p>
+                </div>
+                <div class="format-item">
+                    <strong>WebP</strong>
+                    <p>现代格式，压缩率高</p>
+                    <p>支持透明背景，文件小</p>
+                    <p>尺寸：保持原始像素尺寸</p>
+                </div>
+                <div class="format-item">
+                    <strong>BMP</strong>
+                    <p>无压缩，质量最高</p>
+                    <p>文件最大，兼容性好</p>
+                    <p>尺寸：保持原始像素尺寸</p>
+                </div>
+                <div class="format-item">
+                    <strong>GIF</strong>
+                    <p>支持动画，256色限制</p>
+                    <p>适合简单图形和动画</p>
+                    <p>尺寸：保持原始像素尺寸</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
